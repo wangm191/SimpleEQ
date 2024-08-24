@@ -132,44 +132,14 @@ private:
             {
                 update<0>(cutChain, cutCoefficients);
             }
-//            case Slope_12:
-//            {
-//                *lowCut.template get<0>().coefficients = *cutCoefficients[0];
-//                lowCut.template setBypassed<0>(false);
-//                break;
-//            }
-//            case Slope_24:
-//            {
-//                *lowCut.template get<0>().coefficients = *cutCoefficients[0];
-//                lowCut.template setBypassed<0>(false);
-//                *lowCut.template get<1>().coefficients = *cutCoefficients[1];
-//                lowCut.template setBypassed<1>(false);
-//                break;
-//            }
-//            case Slope_36:
-//            {
-//                *lowCut.template get<0>().coefficients = *cutCoefficients[0];
-//                lowCut.template setBypassed<0>(false);
-//                *lowCut.template get<1>().coefficients = *cutCoefficients[1];
-//                lowCut.template setBypassed<1>(false);
-//                *lowCut.template get<2>().coefficients = *cutCoefficients[2];
-//                lowCut.template setBypassed<2>(false);
-//                break;
-//            }
-//            case Slope_48:
-//            {
-//                *lowCut.template get<0>().coefficients = *cutCoefficients[0];
-//                lowCut.template setBypassed<0>(false);
-//                *lowCut.template get<1>().coefficients = *cutCoefficients[1];
-//                lowCut.template setBypassed<1>(false);
-//                *lowCut.template get<2>().coefficients = *cutCoefficients[2];
-//                lowCut.template setBypassed<2>(false);
-//                *lowCut.template get<3>().coefficients = *cutCoefficients[3];
-//                lowCut.template setBypassed<3>(false);
-//                break;
-//            }
         }
     }
+    
+    void updateLowCutFilters(const ChainSettings& chainSettings);
+    void updateHighCutFilters(const ChainSettings& chainSettings);
+    
+    void updateFilters();
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)
 };
