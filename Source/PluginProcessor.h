@@ -10,6 +10,24 @@
 
 #include <JuceHeader.h>
 
+enum Slope
+{
+    Slope_12,
+    Slope_24,
+    Slope_36,
+    Slope_48
+};
+
+struct ChainSettings
+{
+    float peakOneFreq { 0 }, peakOneGainInDecibels { 0 }, peakOneQuality { 1.f }, peakTwoFreq { 0 }, peakTwoGainInDecibels { 0 }, peakTwoQuality { 1.f };
+    float lowCutFreq { 0 }, highCutFreq {0};
+    
+    Slope lowCutSlope { Slope::Slope_12 }, highCutSlope { Slope::Slope_12 };
+};
+
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
+
 //==============================================================================
 /**
 */
@@ -65,6 +83,62 @@ private:
     
     MonoChain leftChain, rightChain;
     
+    enum ChainPositions
+    {
+        LowCut,
+        PeakOne,
+        PeakTwo,
+        HighCut
+    };
+    
+    void updatePeakFilters(const ChainSettings& chainSettings);
+    using Coefficients = Filter::CoefficientsPtr;
+    static void updateCoefficients(Coefficients& old, const Coefficients& replacements);
+    
+    template<int Index, typename ChainType, typename CoefficientType>
+    void update(ChainType& chain, const CoefficientType& coefficients)
+    {
+        // Same as *cutChain.template get<0>().coefficients = *cutCoefficients[0];
+        updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
+        // Same as cutChain.template setBypassed<0>(false);
+        chain.template setBypassed<Index>(false);
+    }
+    
+    template<typename ChainType, typename CoefficientType>
+    void updateCutFilter(ChainType& cutChain,
+                         const CoefficientType& cutCoefficients,
+                         const Slope& lowCutSlope)
+    {
+        cutChain.template setBypassed<0>(true);
+        cutChain.template setBypassed<1>(true);
+        cutChain.template setBypassed<2>(true);
+        cutChain.template setBypassed<3>(true);
+
+        switch( lowCutSlope )
+        {
+            case Slope_48:
+            {
+                update<3>(cutChain, cutCoefficients);
+            }
+            case Slope_36:
+            {
+                update<2>(cutChain, cutCoefficients);
+            }
+            case Slope_24:
+            {
+                update<1>(cutChain, cutCoefficients);
+            }
+            case Slope_12:
+            {
+                update<0>(cutChain, cutCoefficients);
+            }
+        }
+    }
+    
+    void updateLowCutFilters(const ChainSettings& chainSettings);
+    void updateHighCutFilters(const ChainSettings& chainSettings);
+    
+    void updateFilters();
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)
