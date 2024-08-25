@@ -31,7 +31,7 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
         addAndMakeVisible(comp);
     }
     
-    setSize (600, 400);
+    setSize (800, 600);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
