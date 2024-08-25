@@ -107,14 +107,14 @@ private:
     template<typename ChainType, typename CoefficientType>
     void updateCutFilter(ChainType& cutChain,
                          const CoefficientType& cutCoefficients,
-                         const Slope& lowCutSlope)
+                         const Slope& slope)
     {
         cutChain.template setBypassed<0>(true);
         cutChain.template setBypassed<1>(true);
         cutChain.template setBypassed<2>(true);
         cutChain.template setBypassed<3>(true);
 
-        switch( lowCutSlope )
+        switch( slope )
         {
             case Slope_48:
             {
@@ -137,7 +137,6 @@ private:
     
     void updateLowCutFilters(const ChainSettings& chainSettings);
     void updateHighCutFilters(const ChainSettings& chainSettings);
-    
     void updateFilters();
     
     //==============================================================================
