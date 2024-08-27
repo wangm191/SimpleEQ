@@ -18,6 +18,9 @@ peakOneQualitySliderAttachment(audioProcessor.apvts, "PeakOne Quality", peakOneQ
 peakTwoFreqSliderAttachment(audioProcessor.apvts, "PeakTwo Freq", peakTwoFreqSlider),
 peakTwoGainSliderAttachment(audioProcessor.apvts, "PeakTwo Gain", peakTwoGainSlider),
 peakTwoQualitySliderAttachment(audioProcessor.apvts, "PeakTwo Quality", peakTwoQualitySlider),
+peakThreeFreqSliderAttachment(audioProcessor.apvts, "PeakThree Freq", peakThreeFreqSlider),
+peakThreeGainSliderAttachment(audioProcessor.apvts, "PeakThree Gain", peakThreeGainSlider),
+peakThreeQualitySliderAttachment(audioProcessor.apvts, "PeakThree Quality", peakThreeQualitySlider),
 lowCutFreqSliderAttachment(audioProcessor.apvts, "LowCut Freq", lowCutFreqSlider),
 lowCutSlopeSliderAttachent(audioProcessor.apvts, "LowCut Slope", lowCutSlopeSlider),
 highCutFreqSliderAttachment(audioProcessor.apvts, "HighCut Freq", highCutFreqSlider),
@@ -57,23 +60,28 @@ void SimpleEQAudioProcessorEditor::resized()
     auto bounds = getLocalBounds();
     auto responseArea = bounds.removeFromTop(bounds.getHeight() * 0.4);
     
-    auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.20);
-    auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.25);
+    auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.125);
+    auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.142857);
 
     lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.6 ));
     lowCutSlopeSlider.setBounds(lowCutArea);
     highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.6 ));
     highCutSlopeSlider.setBounds(highCutArea);
     
-    auto peakOneArea = bounds.removeFromLeft(bounds.getWidth() * 0.5);
+    auto peakOneArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
+    auto peakTwoArea = bounds.removeFromLeft(bounds.getWidth() * 0.5);
 
-    peakOneFreqSlider.setBounds(peakOneArea.removeFromTop(bounds.getHeight() * 0.5 ));
-    peakOneGainSlider.setBounds(peakOneArea.removeFromLeft(bounds.getWidth() * 0.5 ));
+    peakOneFreqSlider.setBounds(peakOneArea.removeFromTop(peakOneArea.getHeight() * 0.5 ));
+    peakOneGainSlider.setBounds(peakOneArea.removeFromLeft(peakOneArea.getWidth() * 0.5 ));
     peakOneQualitySlider.setBounds(peakOneArea);
 
-    peakTwoFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.5));
-    peakTwoGainSlider.setBounds(bounds.removeFromLeft(bounds.getWidth() * 0.5));
-    peakTwoQualitySlider.setBounds(bounds);
+    peakTwoFreqSlider.setBounds(peakTwoArea.removeFromTop(peakTwoArea.getHeight() * 0.5));
+    peakTwoGainSlider.setBounds(peakTwoArea.removeFromLeft(peakTwoArea.getWidth() * 0.5));
+    peakTwoQualitySlider.setBounds(peakTwoArea);
+    
+    peakThreeFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.5));
+    peakThreeGainSlider.setBounds(bounds.removeFromLeft(bounds.getWidth() * 0.5));
+    peakThreeQualitySlider.setBounds(bounds);
 }
 
 std::vector<juce::Component*> SimpleEQAudioProcessorEditor::getComps()
@@ -86,6 +94,9 @@ std::vector<juce::Component*> SimpleEQAudioProcessorEditor::getComps()
         &peakTwoFreqSlider,
         &peakTwoGainSlider,
         &peakTwoQualitySlider,
+        &peakThreeFreqSlider,
+        &peakThreeGainSlider,
+        &peakThreeQualitySlider,
         &lowCutFreqSlider,
         &lowCutSlopeSlider,
         &highCutFreqSlider,

@@ -179,8 +179,8 @@ bool SimpleEQAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* SimpleEQAudioProcessor::createEditor()
 {
-    //return new SimpleEQAudioProcessorEditor (*this);
-    return new juce::GenericAudioProcessorEditor (*this);
+    return new SimpleEQAudioProcessorEditor (*this);
+    //return new juce::GenericAudioProcessorEditor (*this);
 }
 
 //==============================================================================
@@ -302,7 +302,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleEQAudioProcessor::crea
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakTwo Quality", 1), "PeakTwo Quality", juce::NormalisableRange<float>(0.1f, 10.f, 0.05f, 1.f), 1.f));
     
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakThree Freq", 1), "PeakThree Freq", juce::NormalisableRange<float>(20.f, 60000.f, 1.f, 0.25f), 2000.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakThree Freq", 1), "PeakThree Freq", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.25f), 6000.f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakThree Gain", 1), "PeakThree Gain", juce::NormalisableRange<float>(-24.f, 24.f, 0.5f, 1.f), 0.0f));
     
