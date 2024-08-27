@@ -219,6 +219,9 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
     settings.peakTwoFreq = apvts.getRawParameterValue("PeakTwo Freq")->load();
     settings.peakTwoGainInDecibels = apvts.getRawParameterValue("PeakTwo Gain")->load();
     settings.peakTwoQuality = apvts.getRawParameterValue("PeakTwo Quality")->load();
+    settings.peakThreeFreq = apvts.getRawParameterValue("PeakThree Freq")->load();
+    settings.peakThreeGainInDecibels = apvts.getRawParameterValue("PeakThree Gain")->load();
+    settings.peakThreeQuality = apvts.getRawParameterValue("PeakThree Quality")->load();
     settings.lowCutSlope = static_cast<Slope>(apvts.getRawParameterValue("LowCut Slope")->load()) ;
     settings.highCutSlope = static_cast<Slope>(apvts.getRawParameterValue("HighCut Slope")->load());
     
@@ -231,11 +234,16 @@ void SimpleEQAudioProcessor::updatePeakFilters(const ChainSettings &chainSetting
     
     auto peakTwoCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), chainSettings.peakTwoFreq, chainSettings.peakTwoQuality, juce::Decibels::decibelsToGain(chainSettings.peakTwoGainInDecibels));
     
+    auto peakThreeCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(), chainSettings.peakThreeFreq, chainSettings.peakThreeQuality, juce::Decibels::decibelsToGain(chainSettings.peakThreeGainInDecibels));
+    
     updateCoefficients(leftChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
     updateCoefficients(rightChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
     
     updateCoefficients(leftChain.get<ChainPositions::PeakTwo>().coefficients, peakTwoCoefficients);
     updateCoefficients(rightChain.get<ChainPositions::PeakTwo>().coefficients, peakTwoCoefficients);
+    
+    updateCoefficients(leftChain.get<ChainPositions::PeakThree>().coefficients, peakThreeCoefficients);
+    updateCoefficients(rightChain.get<ChainPositions::PeakThree>().coefficients, peakThreeCoefficients);
 }
 
 void SimpleEQAudioProcessor::updateCoefficients(Coefficients &old, const Coefficients &replacements)
@@ -293,6 +301,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleEQAudioProcessor::crea
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakTwo Gain", 1), "PeakTwo Gain", juce::NormalisableRange<float>(-24.f, 24.f, 0.5f, 1.f), 0.0f));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakTwo Quality", 1), "PeakTwo Quality", juce::NormalisableRange<float>(0.1f, 10.f, 0.05f, 1.f), 1.f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakThree Freq", 1), "PeakThree Freq", juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.25f), 6000.f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakThree Gain", 1), "PeakThree Gain", juce::NormalisableRange<float>(-24.f, 24.f, 0.5f, 1.f), 0.0f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID("PeakThree Quality", 1), "PeakThree Quality", juce::NormalisableRange<float>(0.1f, 10.f, 0.05f, 1.f), 1.f));
     
     juce::StringArray stringArray;
     for (int i = 0; i < 4; ++i)
