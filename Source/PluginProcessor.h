@@ -50,6 +50,59 @@ Coefficients makePeakOneFilter(const ChainSettings& chainSettings, double sample
 Coefficients makePeakTwoFilter(const ChainSettings& chainSettings, double sampleRate);
 Coefficients makePeakThreeFilter(const ChainSettings& chainSettings, double sampleRate);
 
+template<int Index, typename ChainType, typename CoefficientType>
+void update(ChainType& chain, const CoefficientType& coefficients)
+{
+    // Same as *cutChain.template get<0>().coefficients = *cutCoefficients[0];
+    updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
+    // Same as cutChain.template setBypassed<0>(false);
+    chain.template setBypassed<Index>(false);
+}
+
+template<typename ChainType, typename CoefficientType>
+void updateCutFilter(ChainType& cutChain,
+                     const CoefficientType& cutCoefficients,
+                     const Slope& slope)
+{
+    cutChain.template setBypassed<0>(true);
+    cutChain.template setBypassed<1>(true);
+    cutChain.template setBypassed<2>(true);
+    cutChain.template setBypassed<3>(true);
+
+    switch( slope )
+    {
+        case Slope_48:
+        {
+            update<3>(cutChain, cutCoefficients);
+        }
+        case Slope_36:
+        {
+            update<2>(cutChain, cutCoefficients);
+        }
+        case Slope_24:
+        {
+            update<1>(cutChain, cutCoefficients);
+        }
+        case Slope_12:
+        {
+            update<0>(cutChain, cutCoefficients);
+        }
+    }
+}
+
+inline auto makeLowCutFiler(const ChainSettings &chainSettings, double sampleRate )
+{
+    return juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq,
+                                                                                       sampleRate,
+                                                                                       2 * (chainSettings.lowCutSlope + 1));
+}
+
+inline auto makeHighCutFilter(const ChainSettings &chainSettings, double sampleRate )
+{
+    return juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq,
+                                                                                      sampleRate,
+                                                                                      2 * (chainSettings.highCutSlope + 1));
+}
 //==============================================================================
 /**
 */
@@ -101,47 +154,6 @@ private:
     MonoChain leftChain, rightChain;
     
     void updatePeakFilters(const ChainSettings& chainSettings);
-    
-    template<int Index, typename ChainType, typename CoefficientType>
-    void update(ChainType& chain, const CoefficientType& coefficients)
-    {
-        // Same as *cutChain.template get<0>().coefficients = *cutCoefficients[0];
-        updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
-        // Same as cutChain.template setBypassed<0>(false);
-        chain.template setBypassed<Index>(false);
-    }
-    
-    template<typename ChainType, typename CoefficientType>
-    void updateCutFilter(ChainType& cutChain,
-                         const CoefficientType& cutCoefficients,
-                         const Slope& slope)
-    {
-        cutChain.template setBypassed<0>(true);
-        cutChain.template setBypassed<1>(true);
-        cutChain.template setBypassed<2>(true);
-        cutChain.template setBypassed<3>(true);
-
-        switch( slope )
-        {
-            case Slope_48:
-            {
-                update<3>(cutChain, cutCoefficients);
-            }
-            case Slope_36:
-            {
-                update<2>(cutChain, cutCoefficients);
-            }
-            case Slope_24:
-            {
-                update<1>(cutChain, cutCoefficients);
-            }
-            case Slope_12:
-            {
-                update<0>(cutChain, cutCoefficients);
-            }
-        }
-    }
-    
     void updateLowCutFilters(const ChainSettings& chainSettings);
     void updateHighCutFilters(const ChainSettings& chainSettings);
     void updateFilters();

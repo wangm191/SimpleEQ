@@ -34,11 +34,24 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
         addAndMakeVisible(comp);
     }
     
+    const auto& params = audioProcessor.getParameters();
+    for ( auto param : params )
+    {
+        param ->addListener(this);
+    }
+    
+    startTimer(60);
+    
     setSize (800, 600);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
 {
+    const auto& params = audioProcessor.getParameters();
+    for ( auto param : params )
+    {
+        param->removeListener(this);
+    }
 }
 
 //==============================================================================
@@ -163,7 +176,17 @@ void SimpleEQAudioProcessorEditor::timerCallback()
     if ( parametersChanged.compareAndSetBool(false, true) )
     {
         //update the monochain
+        auto chainSettings = getChainSettings(audioProcessor.apvts);
+        auto peakOneCoefficients = makePeakOneFilter(chainSettings, audioProcessor.getSampleRate());
+        auto peakTwoCoefficients = makePeakTwoFilter(chainSettings, audioProcessor.getSampleRate());
+        auto peakThreeCoefficients = makePeakThreeFilter(chainSettings, audioProcessor.getSampleRate());
+        
+        updateCoefficients(monoChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
+        updateCoefficients(monoChain.get<ChainPositions::PeakTwo>().coefficients, peakTwoCoefficients);
+        updateCoefficients(monoChain.get<ChainPositions::PeakThree>().coefficients, peakThreeCoefficients);
+        
         //signal a repaint
+        repaint();
     }
 }
 
