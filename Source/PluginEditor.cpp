@@ -139,6 +139,20 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
 //==============================================================================
 SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor (SimpleEQAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p),
+peakOneFreqSlider(*audioProcessor.apvts.getParameter("PeakOne Freq"), "Hz"),
+peakOneGainSlider(*audioProcessor.apvts.getParameter("PeakOne Gain"), "dB"),
+peakOneQualitySlider(*audioProcessor.apvts.getParameter("PeakOne Quality"), ""),
+peakTwoFreqSlider(*audioProcessor.apvts.getParameter("PeakTwo Freq"), "Hz"),
+peakTwoGainSlider(*audioProcessor.apvts.getParameter("PeakTwo Gain"), "dB"),
+peakTwoQualitySlider(*audioProcessor.apvts.getParameter("PeakTwo Quality"), ""),
+peakThreeFreqSlider(*audioProcessor.apvts.getParameter("PeakThree Freq"), "Hz"),
+peakThreeGainSlider(*audioProcessor.apvts.getParameter("PeakThree Gain"), "dB"),
+peakThreeQualitySlider(*audioProcessor.apvts.getParameter("PeakThree Quality"), ""),
+lowCutFreqSlider(*audioProcessor.apvts.getParameter("LowCut Freq"), "Hz"),
+lowCutSlopeSlider(*audioProcessor.apvts.getParameter("LowCut Slope"), ""),
+highCutFreqSlider(*audioProcessor.apvts.getParameter("HighCut Freq"), "Hz"),
+highCutSlopeSlider(*audioProcessor.apvts.getParameter("HighCut Slope"), ""),
+
 responseCurveComponent(audioProcessor),
 peakOneFreqSliderAttachment(audioProcessor.apvts, "PeakOne Freq", peakOneFreqSlider),
 peakOneGainSliderAttachment(audioProcessor.apvts, "PeakOne Gain", peakOneGainSlider),
