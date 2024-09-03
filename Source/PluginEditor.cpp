@@ -61,6 +61,11 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
     
     auto sliderBounds = getSliderBounds();
     
+    g.setColour(Colours::red);
+    g.drawRect(getLocalBounds());
+    g.setColour(Colours::yellow);
+    g.drawRect(sliderBounds);
+    
     getLookAndFeel().drawRotarySlider(g,
                                       sliderBounds.getX(),
                                       sliderBounds.getY(),
@@ -74,7 +79,19 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
 
 juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
 {
-    return getLocalBounds();
+    //return getLocalBounds();
+    auto bounds = getLocalBounds();
+    
+    auto size = juce::jmin(bounds.getWidth(), bounds.getHeight());
+    
+    size -= getTextHeight() / 2;
+    
+    juce::Rectangle<int> rec;
+    rec.setSize(size, size);
+    rec.setCentre(bounds.getCentreX(), 0);
+    rec.setY(20);
+
+    return rec;
 }
 //==============================================================================
 ResponseCurveComponent::ResponseCurveComponent(SimpleEQAudioProcessor& p) : audioProcessor(p)
@@ -272,24 +289,24 @@ void SimpleEQAudioProcessorEditor::resized()
     auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.125);
     auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.142857);
 
-    lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.6 ));
+    lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.45 ));
     lowCutSlopeSlider.setBounds(lowCutArea);
-    highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.6 ));
+    highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.45 ));
     highCutSlopeSlider.setBounds(highCutArea);
     
     auto peakOneArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
     auto peakTwoArea = bounds.removeFromLeft(bounds.getWidth() * 0.5);
 
-    peakOneFreqSlider.setBounds(peakOneArea.removeFromTop(peakOneArea.getHeight() * 0.5 ));
+    peakOneFreqSlider.setBounds(peakOneArea.removeFromTop(peakOneArea.getHeight() * 0.6 ));
     peakOneGainSlider.setBounds(peakOneArea.removeFromLeft(peakOneArea.getWidth() * 0.5 ));
     peakOneQualitySlider.setBounds(peakOneArea);
 
-    peakTwoFreqSlider.setBounds(peakTwoArea.removeFromTop(peakTwoArea.getHeight() * 0.5));
-    peakTwoGainSlider.setBounds(peakTwoArea.removeFromLeft(peakTwoArea.getWidth() * 0.5));
+    peakTwoFreqSlider.setBounds(peakTwoArea.removeFromTop(peakTwoArea.getHeight() * 0.6 ));
+    peakTwoGainSlider.setBounds(peakTwoArea.removeFromLeft(peakTwoArea.getWidth() * 0.5 ));
     peakTwoQualitySlider.setBounds(peakTwoArea);
     
-    peakThreeFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.5));
-    peakThreeGainSlider.setBounds(bounds.removeFromLeft(bounds.getWidth() * 0.5));
+    peakThreeFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.6 ));
+    peakThreeGainSlider.setBounds(bounds.removeFromLeft(bounds.getWidth() * 0.5 ));
     peakThreeQualitySlider.setBounds(bounds);
 }
 
