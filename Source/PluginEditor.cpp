@@ -38,7 +38,7 @@ void LookAndFeel::drawRotarySlider(juce::Graphics & g,
         rec.setLeft(center.getX() - 2);
         rec.setRight(center.getX() + 2);
         rec.setTop(bounds.getY() + 2);
-        rec.setBottom(center.getY() - rswl->getTextHeight() * 1.5);
+        rec.setBottom(center.getY() - rswl->getTextHeight() * 2.1);
         
         p.addRoundedRectangle(rec, 2.f);
         
@@ -76,10 +76,11 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
     
     auto sliderBounds = getSliderBounds();
     
-    g.setColour(Colours::red);
-    g.drawRect(getLocalBounds());
-    g.setColour(Colours::yellow);
-    g.drawRect(sliderBounds);
+//  outlines of the slider boxes 
+//    g.setColour(Colours::red);
+//    g.drawRect(getLocalBounds());
+//    g.setColour(Colours::yellow);
+//    g.drawRect(sliderBounds);
     
     getLookAndFeel().drawRotarySlider(g,
                                       sliderBounds.getX(),
@@ -110,7 +111,39 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
 
 juce::String RotarySliderWithLabels::getDisplayString() const
 {
-    return juce::String(getValue());
+    if ( auto* choiceParam = dynamic_cast<juce::AudioParameterChoice*>(param) )
+        return choiceParam->getCurrentChoiceName();
+    
+    juce::String str;
+    //bool addK = false;
+    
+    if ( auto* floatParam = dynamic_cast<juce::AudioParameterFloat*>(param) )
+    {
+        float value = getValue();
+
+//        if (value > 999.f )
+//        {
+//            // divide by 1000 so 1000Hz becomes 1.00kHz
+//            value /= 1000.f; // 1001 / 1000 = 1.001: we just want to see 2 decimal places
+//            addK = true;
+//        }
+
+        str = juce::String(value);
+    }
+    else {
+        jassertfalse;
+    }
+
+    if ( suffix.isNotEmpty() )
+    {
+        str << " ";
+//        if ( addK )
+//            str << "k";
+        
+        str << suffix;
+    }
+    
+    return str;
 }
 //==============================================================================
 ResponseCurveComponent::ResponseCurveComponent(SimpleEQAudioProcessor& p) : audioProcessor(p)
