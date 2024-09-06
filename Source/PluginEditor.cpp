@@ -76,7 +76,7 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
     
     auto sliderBounds = getSliderBounds();
     
-//  outlines of the slider boxes 
+  // Outlines of the slider boxes
 //    g.setColour(Colours::red);
 //    g.drawRect(getLocalBounds());
 //    g.setColour(Colours::yellow);
@@ -91,6 +91,36 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
                                       startAngle,
                                       endAngle,
                                       *this);
+    
+    // To create labels for sliders
+    auto center = sliderBounds.toFloat().getCentre();
+    auto radius = sliderBounds.getWidth() * 0.53f;
+
+    g.setColour(Colours::greenyellow);
+    g.setFont(getTextHeight() * 0.69);
+
+    auto numChoices = labels.size();
+
+    for ( int i = 0; i < numChoices; ++i )
+    {
+        auto pos = labels[i].pos;
+        jassert(0.f <= pos);
+        jassert(pos <= 1.f);
+        auto angle = jmap(pos, 0.f, 1.f, startAngle, endAngle);
+
+        auto cPoint = center.getPointOnCircumference(radius + getTextHeight() * 0.6 - 8, angle);
+
+        Rectangle<float> rec;
+        auto str = labels[i].label;
+        rec.setSize(g.getCurrentFont().getStringWidth(str), getTextHeight());
+        rec.setCentre(cPoint);
+        rec.setY(rec.getY() + getTextHeight());
+        
+    
+        //g.drawRect(rec);
+
+        g.drawFittedText(str, rec.toNearestInt(), juce::Justification::centred, 1);
+    }
 }
 
 juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
@@ -99,7 +129,7 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
     
     auto size = juce::jmin(bounds.getWidth(), bounds.getHeight());
     
-    size -= getTextHeight() / 2;
+    size -= getTextHeight();
     
     juce::Rectangle<int> rec;
     rec.setSize(size, size);
@@ -154,6 +184,8 @@ ResponseCurveComponent::ResponseCurveComponent(SimpleEQAudioProcessor& p) : audi
         param ->addListener(this);
     }
     
+    updateChain();
+    
     startTimer(60);
 }
 
@@ -175,25 +207,32 @@ void ResponseCurveComponent::timerCallback()
 {
     if ( parametersChanged.compareAndSetBool(false, true) )
     {
-        //update the monochain
-        auto chainSettings = getChainSettings(audioProcessor.apvts);
-        auto peakOneCoefficients = makePeakOneFilter(chainSettings, audioProcessor.getSampleRate());
-        auto peakTwoCoefficients = makePeakTwoFilter(chainSettings, audioProcessor.getSampleRate());
-        auto peakThreeCoefficients = makePeakThreeFilter(chainSettings, audioProcessor.getSampleRate());
+        DBG( "Params changed" );
+        // Invoke update monochain
+        updateChain();
         
-        updateCoefficients(monoChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
-        updateCoefficients(monoChain.get<ChainPositions::PeakTwo>().coefficients, peakTwoCoefficients);
-        updateCoefficients(monoChain.get<ChainPositions::PeakThree>().coefficients, peakThreeCoefficients);
-        
-        auto lowCutCoefficients = makeLowCutFiler(chainSettings, audioProcessor.getSampleRate());
-        auto highCutCoefficients = makeHighCutFilter(chainSettings, audioProcessor.getSampleRate());
-        
-        updateCutFilter(monoChain.get<ChainPositions::LowCut>(), lowCutCoefficients, chainSettings.lowCutSlope);
-        updateCutFilter(monoChain.get<ChainPositions::HighCut>(), highCutCoefficients, chainSettings.highCutSlope);
-        
-        //signal a repaint
+        // Signal a repaint
         repaint();
     }
+}
+
+void ResponseCurveComponent::updateChain()
+{
+    // Update the monochain and parameter data when load
+    auto chainSettings = getChainSettings(audioProcessor.apvts);
+    auto peakOneCoefficients = makePeakOneFilter(chainSettings, audioProcessor.getSampleRate());
+    auto peakTwoCoefficients = makePeakTwoFilter(chainSettings, audioProcessor.getSampleRate());
+    auto peakThreeCoefficients = makePeakThreeFilter(chainSettings, audioProcessor.getSampleRate());
+    
+    updateCoefficients(monoChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
+    updateCoefficients(monoChain.get<ChainPositions::PeakTwo>().coefficients, peakTwoCoefficients);
+    updateCoefficients(monoChain.get<ChainPositions::PeakThree>().coefficients, peakThreeCoefficients);
+    
+    auto lowCutCoefficients = makeLowCutFiler(chainSettings, audioProcessor.getSampleRate());
+    auto highCutCoefficients = makeHighCutFilter(chainSettings, audioProcessor.getSampleRate());
+    
+    updateCutFilter(monoChain.get<ChainPositions::LowCut>(), lowCutCoefficients, chainSettings.lowCutSlope);
+    updateCutFilter(monoChain.get<ChainPositions::HighCut>(), highCutCoefficients, chainSettings.highCutSlope);
 }
 
 void ResponseCurveComponent::paint (juce::Graphics& g)
@@ -307,6 +346,37 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
+    
+    peakOneFreqSlider.labels.add({0.f, "20hZ"});
+    peakOneFreqSlider.labels.add({1.f, "20000hZ"});
+    peakOneGainSlider.labels.add({0.f, "-24dB"});
+    peakOneGainSlider.labels.add({1.f, "24dB"});
+    peakOneQualitySlider.labels.add({0.f, "0.1"});
+    peakOneQualitySlider.labels.add({1.f, "10"});
+    
+    peakTwoFreqSlider.labels.add({0.f, "20hZ"});
+    peakTwoFreqSlider.labels.add({1.f, "20000hZ"});
+    peakTwoGainSlider.labels.add({0.f, "-24dB"});
+    peakTwoGainSlider.labels.add({1.f, "24dB"});
+    peakTwoQualitySlider.labels.add({0.f, "0.1"});
+    peakTwoQualitySlider.labels.add({1.f, "10"});
+    
+    peakThreeFreqSlider.labels.add({0.f, "20hZ"});
+    peakThreeFreqSlider.labels.add({1.f, "20000hZ"});
+    peakThreeGainSlider.labels.add({0.f, "-24dB"});
+    peakThreeGainSlider.labels.add({1.f, "24dB"});
+    peakThreeQualitySlider.labels.add({0.f, "0.1"});
+    peakThreeQualitySlider.labels.add({1.f, "10"});
+    
+    lowCutFreqSlider.labels.add({0.f, "20hZ"});
+    lowCutFreqSlider.labels.add({1.f, "20000hZ"});
+    lowCutSlopeSlider.labels.add({0.f, "12"});
+    lowCutSlopeSlider.labels.add({1.f, "48"});
+    
+    highCutFreqSlider.labels.add({0.f, "20hZ"});
+    highCutFreqSlider.labels.add({1.f, "20000hZ"});
+    highCutSlopeSlider.labels.add({0.f, "12"});
+    highCutSlopeSlider.labels.add({1.f, "48"});
     
     for ( auto comp : getComps() )
     {
