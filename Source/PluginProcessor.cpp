@@ -54,7 +54,7 @@ bool SimpleEQAudioProcessor::producesMidi() const
 
 bool SimpleEQAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+    #if JucePlugin_IsMidiEffect
     return true;
    #else
     return false;
