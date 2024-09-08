@@ -70,6 +70,8 @@ juce::Timer
     
     void paint (juce::Graphics& g) override;
     
+    void resized() override;
+    
 private:
     SimpleEQAudioProcessor& audioProcessor;
     juce::Atomic<bool> parametersChanged { false };
@@ -77,6 +79,14 @@ private:
     MonoChain monoChain;
     
     void updateChain();
+    
+    // Creating the frequency grid background image
+    juce::Image background;
+    
+    // Fit to bounding box with no overlapping lines
+    juce::Rectangle<int> getRenderArea();
+    
+    juce::Rectangle<int> getAnalysisArea();
 };
 
 //==============================================================================
