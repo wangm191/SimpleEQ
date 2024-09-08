@@ -324,9 +324,9 @@ void ResponseCurveComponent::resized()
     
     Array<float> freqs
     {
-        20, 30, 40, 50 , 100,
-        200, 300, 400, 500, 1000,
-        2000, 3000, 4000, 5000, 10000,
+        20, 50 , 100,
+        200, 500, 1000,
+        2000, 5000, 10000,
         20000
     };
     
@@ -363,7 +363,30 @@ void ResponseCurveComponent::resized()
         g.setColour(gDb == 0.f ? Colours::greenyellow : Colours::darkgrey);
         g.drawHorizontalLine(y, left, right);
     }
-    g.drawRect(getAnalysisArea());
+    //g.drawRect(getAnalysisArea());
+    
+    g.setColour(Colours::lightgrey);
+    const int fontHeight = 10;
+    g.setFont(fontHeight);
+    
+    for ( int i = 0; i < freqs.size(); ++i )
+    {
+        auto f = freqs[i];
+        auto x = xs[i];
+        
+        String str;
+        str << f;
+        str << "Hz";
+        
+        auto textWidth = g.getCurrentFont().getStringWidth(str);
+        
+        Rectangle<int> rec;
+        rec.setSize(textWidth, fontHeight);
+        rec.setCentre(x, 0);
+        rec.setY(1);
+        
+        g.drawFittedText(str, rec, juce::Justification::centred, 1);
+    }
 }
 
 juce::Rectangle<int> ResponseCurveComponent::getRenderArea()
@@ -374,8 +397,8 @@ juce::Rectangle<int> ResponseCurveComponent::getRenderArea()
 //                  12 //JUCE_LIVE_CONSTANT(12)
 //                  );
         
-    bounds.removeFromTop(12);
-    bounds.removeFromBottom(2);
+    bounds.removeFromTop(14);
+    bounds.removeFromBottom(4);
     bounds.removeFromLeft(20);
     bounds.removeFromRight(20);
     
@@ -385,8 +408,8 @@ juce::Rectangle<int> ResponseCurveComponent::getRenderArea()
 juce::Rectangle<int> ResponseCurveComponent::getAnalysisArea()
 {
     auto bounds = getRenderArea();
-    bounds.removeFromTop(4);
-    bounds.removeFromBottom(4);
+    bounds.removeFromTop(2);
+    bounds.removeFromBottom(2);
     return bounds;
 }
 //==============================================================================
