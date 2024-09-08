@@ -363,7 +363,6 @@ void ResponseCurveComponent::resized()
         g.setColour(gDb == 0.f ? Colours::greenyellow : Colours::darkgrey);
         g.drawHorizontalLine(y, left, right);
     }
-    //g.drawRect(getAnalysisArea());
     
     g.setColour(Colours::lightgrey);
     const int fontHeight = 10;
@@ -400,12 +399,21 @@ void ResponseCurveComponent::resized()
         auto textWidth = g.getCurrentFont().getStringWidth(str);
         
         Rectangle<int> rec;
-        rec.setSize(textWidth, getHeight());
+        rec.setSize(textWidth, fontHeight);
         rec.setX(getWidth() - textWidth);
         rec.setCentre(rec.getCentreX(), y);
         
         g.setColour(gDb == 0.f ? Colours::greenyellow : Colours::lightgrey);
         
+        g.drawFittedText(str, rec, juce::Justification::centred, 1);
+        
+        str.clear();
+        str << (gDb - 24.f);
+        
+        rec.setX(1);
+        textWidth = g.getCurrentFont().getStringWidth(str);
+        rec.setSize(textWidth, fontHeight);
+        g.setColour(Colours::lightgrey);
         g.drawFittedText(str, rec, juce::Justification::centred, 1);
     }
 }
