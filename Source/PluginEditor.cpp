@@ -356,7 +356,8 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
     const double outputMax = responseArea.getY();
     auto map = [outputMin, outputMax] (double input)
     {
-        return jmap(input, -24.5, 24.5, outputMin, outputMax);
+        return jmap(input, -24.0, 24.0, outputMin, outputMax);
+        //return jmap(input, -24.5, 24.5, outputMin, outputMax);
     };
     
     
@@ -366,6 +367,9 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
     {
         responseCurve.lineTo(responseArea.getX() + i,  map(magnitudes[i]));
     }
+    
+    // ChannelFFTPath now fits within the correct response area
+    leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY() - 10.f));
     
     g.setColour(Colours::skyblue);
     g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
