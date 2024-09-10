@@ -72,40 +72,68 @@ void LookAndFeel::drawToggleButton(juce::Graphics &g,
 {
     using namespace juce;
     
-    Path powerButton;
+    if ( auto* pb = dynamic_cast<PowerButton*>(&toggleButton) )
+    {
+        Path powerButton;
+        
+        auto bounds = toggleButton.getLocalBounds();
+        
+        //    g.setColour(Colours::red);
+        //    g.drawRect(bounds);
+        
+        auto size = juce::jmin(bounds.getWidth(), bounds.getHeight() - 6);
+        auto radius = bounds.withSizeKeepingCentre(size, size).toFloat();
+        
+        float angle = 30.f;
+        
+        size -= 7;
+        
+        powerButton.addCentredArc(radius.getCentreX(),
+                                  radius.getCentreY(),
+                                  size * 0.5,
+                                  size * 0.5,
+                                  0.f,
+                                  degreesToRadians(angle),
+                                  degreesToRadians(360.f - angle),
+                                  true);
+        
+        powerButton.startNewSubPath(radius.getCentreX(), radius.getY());
+        powerButton.lineTo(radius.getCentre());
+        
+        PathStrokeType pst(2.f, juce::PathStrokeType::curved);
+        
+        auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colours::greenyellow;
+        
+        g.setColour(color);
+        g.strokePath(powerButton, pst);
+        
+        g.drawEllipse(radius, 2);
+    }
     
-    auto bounds = toggleButton.getLocalBounds();
-    
-//    g.setColour(Colours::red);
-//    g.drawRect(bounds);
-    
-    auto size = juce::jmin(bounds.getWidth(), bounds.getHeight() - 6);
-    auto radius = bounds.withSizeKeepingCentre(size, size).toFloat();
-    
-    float angle = 30.f;
-    
-    size -= 7;
-    
-    powerButton.addCentredArc(radius.getCentreX(),
-                              radius.getCentreY(),
-                              size * 0.5,
-                              size * 0.5,
-                              0.f,
-                              degreesToRadians(angle),
-                              degreesToRadians(360.f - angle),
-                              true);
-    
-    powerButton.startNewSubPath(radius.getCentreX(), radius.getY());
-    powerButton.lineTo(radius.getCentre());
-    
-    PathStrokeType pst(2.f, juce::PathStrokeType::curved);
-    
-    auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colours::greenyellow;
-    
-    g.setColour(color);
-    g.strokePath(powerButton, pst);
-    
-    g.drawEllipse(radius, 2);
+    else if ( auto* analyzerButton = dynamic_cast<AnalyzerButton*>(&toggleButton) )
+    {
+        auto color = !toggleButton.getToggleState() ? Colours::dimgrey : Colours::pink;
+        
+        g.setColour(color);
+        
+        auto bounds = toggleButton.getLocalBounds();
+        g.drawRect(bounds);
+        
+        auto insertRec = bounds.reduced(4);
+        
+        Path randomPath;
+        
+        Random r;
+        
+        randomPath.startNewSubPath(insertRec.getX(), insertRec.getY() + insertRec.getHeight() * r.nextFloat());
+        
+        for ( auto x = insertRec.getX() + 1; x < insertRec.getRight(); x += 2 )
+        {
+            randomPath.lineTo(x, insertRec.getY() + insertRec.getHeight() * r.nextFloat());
+        }
+        
+        g.strokePath(randomPath, PathStrokeType(1.f));
+    }
 }
 //==============================================================================
 void RotarySliderWithLabels::paint(juce::Graphics &g)
@@ -177,7 +205,7 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
     juce::Rectangle<int> rec;
     rec.setSize(size, size);
     rec.setCentre(bounds.getCentreX(), 0);
-    rec.setY(17);
+    rec.setY(8);
 
     return rec;
 }
@@ -659,6 +687,8 @@ analyzerEnabledButtonAttachment(audioProcessor.apvts, "Analyzer Enabled", analyz
     lowCutBypassButton.setLookAndFeel(&lnf);
     highCutBypassButton.setLookAndFeel(&lnf);
     
+    analyzerEnabledButton.setLookAndFeel(&lnf);
+    
     setSize (800, 600);
 }
 
@@ -669,6 +699,8 @@ SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
     peakThreeBypassButton.setLookAndFeel(nullptr);
     lowCutBypassButton.setLookAndFeel(nullptr);
     highCutBypassButton.setLookAndFeel(nullptr);
+    
+    analyzerEnabledButton.setLookAndFeel(nullptr);
     
 }
 
@@ -686,35 +718,49 @@ void SimpleEQAudioProcessorEditor::resized()
     // subcomponents in your editor..
     
     auto bounds = getLocalBounds();
+    
+    auto analyzerEnabledArea = bounds.removeFromTop(30);
+    analyzerEnabledArea.setWidth(110);
+    analyzerEnabledArea.setX(20);
+    analyzerEnabledArea.removeFromTop(5);
+    
+    analyzerEnabledButton.setBounds(analyzerEnabledArea);
+    
+    bounds.removeFromTop(5);
+    
     auto responseArea = bounds.removeFromTop(bounds.getHeight() * 0.4);
     
     responseCurveComponent.setBounds(responseArea);
     
+    bounds.removeFromTop(2);
+    
     auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.125);
     auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.142857);
     
-    lowCutBypassButton.setBounds(lowCutArea.removeFromTop(32));
+    lowCutBypassButton.setBounds(lowCutArea.removeFromTop(29));
+    lowCutArea.removeFromTop(2);
     lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.45 ));
     lowCutSlopeSlider.setBounds(lowCutArea);
     
-    highCutBypassButton.setBounds(highCutArea.removeFromTop(32));
+    highCutBypassButton.setBounds(highCutArea.removeFromTop(29));
+    highCutArea.removeFromTop(2);
     highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.45 ));
     highCutSlopeSlider.setBounds(highCutArea);
     
     auto peakOneArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
     auto peakTwoArea = bounds.removeFromLeft(bounds.getWidth() * 0.5);
 
-    peakOneBypassButton.setBounds(peakOneArea.removeFromTop(32));
+    peakOneBypassButton.setBounds(peakOneArea.removeFromTop(33));
     peakOneFreqSlider.setBounds(peakOneArea.removeFromTop(peakOneArea.getHeight() * 0.6 ));
     peakOneGainSlider.setBounds(peakOneArea.removeFromLeft(peakOneArea.getWidth() * 0.5 ));
     peakOneQualitySlider.setBounds(peakOneArea);
 
-    peakTwoBypassButton.setBounds(peakTwoArea.removeFromTop(32));
+    peakTwoBypassButton.setBounds(peakTwoArea.removeFromTop(33));
     peakTwoFreqSlider.setBounds(peakTwoArea.removeFromTop(peakTwoArea.getHeight() * 0.6 ));
     peakTwoGainSlider.setBounds(peakTwoArea.removeFromLeft(peakTwoArea.getWidth() * 0.5 ));
     peakTwoQualitySlider.setBounds(peakTwoArea);
     
-    peakThreeBypassButton.setBounds(bounds.removeFromTop(32));
+    peakThreeBypassButton.setBounds(bounds.removeFromTop(33));
     peakThreeFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.6 ));
     peakThreeGainSlider.setBounds(bounds.removeFromLeft(bounds.getWidth() * 0.5 ));
     peakThreeQualitySlider.setBounds(bounds);
