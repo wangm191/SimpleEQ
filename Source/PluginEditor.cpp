@@ -23,10 +23,12 @@ void LookAndFeel::drawRotarySlider(juce::Graphics & g,
     
     auto bounds = Rectangle<float>(x, y, width, height);
     
-    g.setColour(Colours::slateblue);
+    auto enabled = slider.isEnabled();
+    
+    g.setColour(enabled ? Colours::slateblue : Colours::darkgrey);
     g.fillEllipse(bounds);
     
-    g.setColour(Colours::springgreen);
+    g.setColour(enabled ? Colours::springgreen : Colours::grey);
     g.drawEllipse(bounds, 1.f);
     
     if ( auto* rswl = dynamic_cast<RotarySliderWithLabels*>(&slider)  )
@@ -675,6 +677,66 @@ analyzerEnabledButtonAttachment(audioProcessor.apvts, "Analyzer Enabled", analyz
     highCutBypassButton.setLookAndFeel(&lnf);
     
     analyzerEnabledButton.setLookAndFeel(&lnf);
+    
+    // SafePointer to make sure gui visual is stopped when bypass buttons are enabled
+    auto safePtr = juce::Component::SafePointer<SimpleEQAudioProcessorEditor>(this);
+    peakOneBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->peakOneBypassButton.getToggleState();
+            
+            comp->peakOneFreqSlider.setEnabled( !bypassed );
+            comp->peakOneGainSlider.setEnabled( !bypassed );
+            comp->peakOneQualitySlider.setEnabled( !bypassed );
+        }
+    };
+    
+    peakTwoBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->peakTwoBypassButton.getToggleState();
+            
+            comp->peakTwoFreqSlider.setEnabled( !bypassed );
+            comp->peakTwoGainSlider.setEnabled( !bypassed );
+            comp->peakTwoQualitySlider.setEnabled( !bypassed );
+        }
+    };
+    
+    peakThreeBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->peakThreeBypassButton.getToggleState();
+            
+            comp->peakThreeFreqSlider.setEnabled( !bypassed );
+            comp->peakThreeGainSlider.setEnabled( !bypassed );
+            comp->peakThreeQualitySlider.setEnabled( !bypassed );
+        }
+    };
+    
+    lowCutBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->lowCutBypassButton.getToggleState();
+            
+            comp->lowCutFreqSlider.setEnabled( !bypassed );
+            comp->lowCutSlopeSlider.setEnabled( !bypassed );
+        }
+    };
+    
+    highCutBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->highCutBypassButton.getToggleState();
+            
+            comp->highCutFreqSlider.setEnabled( !bypassed );
+            comp->highCutSlopeSlider.setEnabled( !bypassed );
+        }
+    };
     
     setSize (800, 600);
 }
