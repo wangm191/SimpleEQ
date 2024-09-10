@@ -253,6 +253,11 @@ juce::Timer
     
     void resized() override;
     
+    void toggleAnalysisEnablement(bool enabled)
+    {
+        shouldShowFFTAnalysis = enabled;
+    }
+    
 private:
     SimpleEQAudioProcessor& audioProcessor;
     juce::Atomic<bool> parametersChanged { false };
@@ -270,6 +275,9 @@ private:
     juce::Rectangle<int> getAnalysisArea();
     
     PathProducer leftPathProducer, rightPathProducer;
+    
+    //Flag for AnalysisEnablment check;
+    bool shouldShowFFTAnalysis = true;
 };
 
 //==============================================================================
