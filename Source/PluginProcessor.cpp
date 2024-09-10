@@ -243,6 +243,12 @@ ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts)
     settings.lowCutSlope = static_cast<Slope>(apvts.getRawParameterValue("LowCut Slope")->load()) ;
     settings.highCutSlope = static_cast<Slope>(apvts.getRawParameterValue("HighCut Slope")->load());
     
+    settings.peakOneBypassed = apvts.getRawParameterValue("PeakOne Bypassed")->load() > 0.5f;
+    settings.peakTwoBypassed = apvts.getRawParameterValue("PeakTwo Bypassed")->load() > 0.5f;
+    settings.peakThreeBypassed = apvts.getRawParameterValue("PeakThree Bypassed")->load() > 0.5f;
+    settings.lowCutBypassed = apvts.getRawParameterValue("LowCut Bypassed")->load() > 0.5f;
+    settings.highCutBypassed = apvts.getRawParameterValue("HighCut Bypassed")->load() > 0.5f;
+    
     return settings;
 }
 
@@ -277,6 +283,15 @@ void SimpleEQAudioProcessor::updatePeakFilters(const ChainSettings &chainSetting
     auto peakTwoCoefficients = makePeakTwoFilter(chainSettings, getSampleRate());
     auto peakThreeCoefficients = makePeakThreeFilter(chainSettings, getSampleRate());
     
+    leftChain.setBypassed<ChainPositions::PeakOne>(chainSettings.peakOneBypassed);
+    rightChain.setBypassed<ChainPositions::PeakOne>(chainSettings.peakOneBypassed);
+
+    leftChain.setBypassed<ChainPositions::PeakTwo>(chainSettings.peakTwoBypassed);
+    rightChain.setBypassed<ChainPositions::PeakTwo>(chainSettings.peakTwoBypassed);
+
+    leftChain.setBypassed<ChainPositions::PeakThree>(chainSettings.peakThreeBypassed);
+    rightChain.setBypassed<ChainPositions::PeakThree>(chainSettings.peakThreeBypassed);
+    
     updateCoefficients(leftChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
     updateCoefficients(rightChain.get<ChainPositions::PeakOne>().coefficients, peakOneCoefficients);
     
@@ -298,6 +313,9 @@ void SimpleEQAudioProcessor::updateLowCutFilters(const ChainSettings &chainSetti
 
     auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
     auto& rightLowCut = rightChain.get<ChainPositions::LowCut>();
+    
+    leftChain.setBypassed<ChainPositions::LowCut>(chainSettings.lowCutBypassed);
+    rightChain.setBypassed<ChainPositions::LowCut>(chainSettings.lowCutBypassed);
 
     updateCutFilter(leftLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
     updateCutFilter(rightLowCut, lowCutCoefficients, chainSettings.lowCutSlope);
@@ -308,6 +326,9 @@ void SimpleEQAudioProcessor::updateHighCutFilters(const ChainSettings &chainSett
     auto highCutCoefficients = makeHighCutFilter(chainSettings, getSampleRate());
     auto& leftHighCut = leftChain.get<ChainPositions::HighCut>();
     auto& rightHighCut = rightChain.get<ChainPositions::HighCut>();
+    
+    leftChain.setBypassed<ChainPositions::HighCut>(chainSettings.highCutBypassed);
+    rightChain.setBypassed<ChainPositions::HighCut>(chainSettings.highCutBypassed);
 
     updateCutFilter(leftHighCut, highCutCoefficients, chainSettings.highCutSlope);
     updateCutFilter(rightHighCut, highCutCoefficients, chainSettings.highCutSlope);
@@ -360,6 +381,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout SimpleEQAudioProcessor::crea
     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID("LowCut Slope", 1), "LowCut Slope", stringArray, 0));
     
     layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID("HighCut Slope", 1), "HighCut Slope", stringArray, 0));
+
+    layout.add(std::make_unique<juce::AudioParameterBool>("PeakOne Bypassed", "PeakOne Bypassed", false));
+    layout.add(std::make_unique<juce::AudioParameterBool>("PeakTwo Bypassed", "PeakTwo Bypassed", false));
+    layout.add(std::make_unique<juce::AudioParameterBool>("PeakThree Bypassed", "PeakThree Bypassed", false));
+    layout.add(std::make_unique<juce::AudioParameterBool>("LowCut Bypassed", "LowCut Bypassed", false));
+    layout.add(std::make_unique<juce::AudioParameterBool>("HighCut Bypassed", "HighCut Bypassed", false));
+    layout.add(std::make_unique<juce::AudioParameterBool>("Analyzer Enabled", "Analyzer Enabled", true));
     
     return layout;
 }
