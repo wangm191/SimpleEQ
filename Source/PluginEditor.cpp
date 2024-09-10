@@ -23,10 +23,12 @@ void LookAndFeel::drawRotarySlider(juce::Graphics & g,
     
     auto bounds = Rectangle<float>(x, y, width, height);
     
-    g.setColour(Colours::slateblue);
+    auto enabled = slider.isEnabled();
+    
+    g.setColour(enabled ? Colours::slateblue : Colours::darkgrey);
     g.fillEllipse(bounds);
     
-    g.setColour(Colours::springgreen);
+    g.setColour(enabled ? Colours::springgreen : Colours::grey);
     g.drawEllipse(bounds, 1.f);
     
     if ( auto* rswl = dynamic_cast<RotarySliderWithLabels*>(&slider)  )
@@ -57,13 +59,72 @@ void LookAndFeel::drawRotarySlider(juce::Graphics & g,
         rec.setSize(strWidth + 4, rswl->getTextHeight() + 2);
         rec.setCentre(center);
         
-       g.setColour(Colours::transparentBlack);
+        // Slider text color
+        g.setColour(enabled ? Colours::transparentBlack : Colours::darkgrey);
         g.fillRect(rec);
         
-        g.setColour(Colours::white);
+        g.setColour(enabled ? Colours::white : Colours::lightgrey);
         g.drawFittedText(text, rec.toNearestInt(), juce::Justification::centred, 1);
     }
 };
+
+void LookAndFeel::drawToggleButton(juce::Graphics &g,
+                                   juce::ToggleButton &toggleButton,
+                                   bool shouldDrawButtonAsHighlighted,
+                                   bool shouldDrawButtonAsDown)
+{
+    using namespace juce;
+    
+    if ( auto* pb = dynamic_cast<PowerButton*>(&toggleButton) )
+    {
+        Path powerButton;
+        
+        auto bounds = toggleButton.getLocalBounds();
+        
+        //    g.setColour(Colours::red);
+        //    g.drawRect(bounds);
+        
+        auto size = juce::jmin(bounds.getWidth(), bounds.getHeight() - 6);
+        auto radius = bounds.withSizeKeepingCentre(size, size).toFloat();
+        
+        float angle = 30.f;
+        
+        size -= 7;
+        
+        powerButton.addCentredArc(radius.getCentreX(),
+                                  radius.getCentreY(),
+                                  size * 0.5,
+                                  size * 0.5,
+                                  0.f,
+                                  degreesToRadians(angle),
+                                  degreesToRadians(360.f - angle),
+                                  true);
+        
+        powerButton.startNewSubPath(radius.getCentreX(), radius.getY());
+        powerButton.lineTo(radius.getCentre());
+        
+        PathStrokeType pst(2.f, juce::PathStrokeType::curved);
+        
+        auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colours::greenyellow;
+        
+        g.setColour(color);
+        g.strokePath(powerButton, pst);
+        
+        g.drawEllipse(radius, 2);
+    }
+    
+    else if ( auto* analyzerButton = dynamic_cast<AnalyzerButton*>(&toggleButton) )
+    {
+        auto color = !toggleButton.getToggleState() ? Colours::dimgrey : Colours::pink;
+        
+        g.setColour(color);
+        
+        auto bounds = toggleButton.getLocalBounds();
+        g.drawRect(bounds);
+        
+        g.strokePath(analyzerButton->randomPath, PathStrokeType(1.f));
+    }
+}
 //==============================================================================
 void RotarySliderWithLabels::paint(juce::Graphics &g)
 {
@@ -76,7 +137,7 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
     
     auto sliderBounds = getSliderBounds();
     
-  // Outlines of the slider boxes
+   //Outlines of the slider boxes
 //    g.setColour(Colours::red);
 //    g.drawRect(getLocalBounds());
 //    g.setColour(Colours::yellow);
@@ -129,12 +190,12 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
     
     auto size = juce::jmin(bounds.getWidth(), bounds.getHeight());
     
-    size -= getTextHeight();
+    size -= getTextHeight() * 1.5;
     
     juce::Rectangle<int> rec;
     rec.setSize(size, size);
     rec.setCentre(bounds.getCentreX(), 0);
-    rec.setY(20);
+    rec.setY(8);
 
     return rec;
 }
@@ -264,11 +325,14 @@ void PathProducer::process(juce::Rectangle<float> fftBounds, double sampleRate)
 
 void ResponseCurveComponent::timerCallback()
 {
-    auto fftBounds = getAnalysisArea().toFloat();
-    auto sampleRate = audioProcessor.getSampleRate();
-    
-    leftPathProducer.process(fftBounds, sampleRate);
-    rightPathProducer.process(fftBounds, sampleRate);
+    if ( shouldShowFFTAnalysis)
+    {
+        auto fftBounds = getAnalysisArea().toFloat();
+        auto sampleRate = audioProcessor.getSampleRate();
+        
+        leftPathProducer.process(fftBounds, sampleRate);
+        rightPathProducer.process(fftBounds, sampleRate);
+    }
     
     if ( parametersChanged.compareAndSetBool(false, true) )
     {
@@ -284,6 +348,13 @@ void ResponseCurveComponent::updateChain()
 {
     // Update the monochain and parameter data when load
     auto chainSettings = getChainSettings(audioProcessor.apvts);
+    
+    monoChain.setBypassed<ChainPositions::PeakOne>(chainSettings.peakOneBypassed);
+    monoChain.setBypassed<ChainPositions::PeakTwo>(chainSettings.peakTwoBypassed);
+    monoChain.setBypassed<ChainPositions::PeakThree>(chainSettings.peakThreeBypassed);
+    monoChain.setBypassed<ChainPositions::LowCut>(chainSettings.lowCutBypassed);
+    monoChain.setBypassed<ChainPositions::HighCut>(chainSettings.highCutBypassed);
+    
     auto peakOneCoefficients = makePeakOneFilter(chainSettings, audioProcessor.getSampleRate());
     auto peakTwoCoefficients = makePeakTwoFilter(chainSettings, audioProcessor.getSampleRate());
     auto peakThreeCoefficients = makePeakThreeFilter(chainSettings, audioProcessor.getSampleRate());
@@ -334,23 +405,29 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
         if (! monoChain.isBypassed<ChainPositions::PeakThree>() )
             magnitude *= peakThree.coefficients->getMagnitudeForFrequency(freq, sampleRate);
         
-        if (! lowCut.isBypassed<0>() )
-            magnitude *= lowCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (! lowCut.isBypassed<1>() )
-            magnitude *= lowCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (! lowCut.isBypassed<2>() )
-            magnitude *= lowCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (! lowCut.isBypassed<3>() )
-            magnitude *= lowCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-    
-        if (! highCut.isBypassed<0>() )
-            magnitude *= highCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (! highCut.isBypassed<1>() )
-            magnitude *= highCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (! highCut.isBypassed<2>() )
-            magnitude *= highCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
-        if (! highCut.isBypassed<3>() )
-            magnitude *= highCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        if ( !monoChain.isBypassed<ChainPositions::LowCut>() )
+        {
+            if ( !lowCut.isBypassed<0>() )
+                magnitude *= lowCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if ( !lowCut.isBypassed<1>() )
+                magnitude *= lowCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if ( !lowCut.isBypassed<2>() )
+                magnitude *= lowCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if ( !lowCut.isBypassed<3>() )
+                magnitude *= lowCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        }
+        
+        if ( !monoChain.isBypassed<ChainPositions::HighCut>() )
+        {
+            if ( !highCut.isBypassed<0>() )
+                magnitude *= highCut.get<0>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if ( !highCut.isBypassed<1>() )
+                magnitude *= highCut.get<1>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if ( !highCut.isBypassed<2>() )
+                magnitude *= highCut.get<2>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+            if ( !highCut.isBypassed<3>() )
+                magnitude *= highCut.get<3>().coefficients->getMagnitudeForFrequency(freq, sampleRate);
+        }
         
         magnitudes[i] = Decibels::gainToDecibels(magnitude);
     }
@@ -373,18 +450,21 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
         responseCurve.lineTo(responseArea.getX() + i,  map(magnitudes[i]));
     }
     
-    // ChannelFFTPath now fits within the correct response area
-    auto leftChannelFFTPath = leftPathProducer.getPath();
-    leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY() - 10.f));
-    
-    g.setColour(Colours::skyblue);
-    g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
-    
-    auto rightChannelFFTPath = rightPathProducer.getPath();
-    rightChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY() - 10.f));
-    
-    g.setColour(Colours::lightyellow);
-    g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
+    if ( shouldShowFFTAnalysis )
+    {
+        // ChannelFFTPath now fits within the correct response area
+        auto leftChannelFFTPath = leftPathProducer.getPath();
+        leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY() - 10.f));
+        
+        g.setColour(Colours::skyblue);
+        g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
+        
+        auto rightChannelFFTPath = rightPathProducer.getPath();
+        rightChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY() - 10.f));
+        
+        g.setColour(Colours::lightyellow);
+        g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
+    }
     
     g.setColour(Colours::orange);
     g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
@@ -549,7 +629,14 @@ peakThreeQualitySliderAttachment(audioProcessor.apvts, "PeakThree Quality", peak
 lowCutFreqSliderAttachment(audioProcessor.apvts, "LowCut Freq", lowCutFreqSlider),
 lowCutSlopeSliderAttachent(audioProcessor.apvts, "LowCut Slope", lowCutSlopeSlider),
 highCutFreqSliderAttachment(audioProcessor.apvts, "HighCut Freq", highCutFreqSlider),
-highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlopeSlider)
+highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlopeSlider),
+
+peakOneBypassButtonAttachment(audioProcessor.apvts, "PeakOne Bypassed", peakOneBypassButton),
+peakTwoBypassButtonAttachment(audioProcessor.apvts, "PeakTwo Bypassed", peakTwoBypassButton),
+peakThreeBypassButtonAttachment(audioProcessor.apvts, "PeakThree Bypassed", peakThreeBypassButton),
+lowCutBypassButtonAttachment(audioProcessor.apvts, "LowCut Bypassed", lowCutBypassButton),
+highCutBypassButtonAttachment(audioProcessor.apvts, "HighCut Bypassed", highCutBypassButton),
+analyzerEnabledButtonAttachment(audioProcessor.apvts, "Analyzer Enabled", analyzerEnabledButton)
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -590,11 +677,96 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
         addAndMakeVisible(comp);
     }
     
+    peakOneBypassButton.setLookAndFeel(&lnf);
+    peakTwoBypassButton.setLookAndFeel(&lnf);
+    peakThreeBypassButton.setLookAndFeel(&lnf);
+    lowCutBypassButton.setLookAndFeel(&lnf);
+    highCutBypassButton.setLookAndFeel(&lnf);
+    
+    analyzerEnabledButton.setLookAndFeel(&lnf);
+    
+    // SafePointer to make sure gui visual is stopped when bypass buttons are enabled
+    auto safePtr = juce::Component::SafePointer<SimpleEQAudioProcessorEditor>(this);
+    peakOneBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->peakOneBypassButton.getToggleState();
+            
+            comp->peakOneFreqSlider.setEnabled( !bypassed );
+            comp->peakOneGainSlider.setEnabled( !bypassed );
+            comp->peakOneQualitySlider.setEnabled( !bypassed );
+        }
+    };
+    
+    peakTwoBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->peakTwoBypassButton.getToggleState();
+            
+            comp->peakTwoFreqSlider.setEnabled( !bypassed );
+            comp->peakTwoGainSlider.setEnabled( !bypassed );
+            comp->peakTwoQualitySlider.setEnabled( !bypassed );
+        }
+    };
+    
+    peakThreeBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->peakThreeBypassButton.getToggleState();
+            
+            comp->peakThreeFreqSlider.setEnabled( !bypassed );
+            comp->peakThreeGainSlider.setEnabled( !bypassed );
+            comp->peakThreeQualitySlider.setEnabled( !bypassed );
+        }
+    };
+    
+    lowCutBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->lowCutBypassButton.getToggleState();
+            
+            comp->lowCutFreqSlider.setEnabled( !bypassed );
+            comp->lowCutSlopeSlider.setEnabled( !bypassed );
+        }
+    };
+    
+    highCutBypassButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto bypassed = comp->highCutBypassButton.getToggleState();
+            
+            comp->highCutFreqSlider.setEnabled( !bypassed );
+            comp->highCutSlopeSlider.setEnabled( !bypassed );
+        }
+    };
+    
+    analyzerEnabledButton.onClick = [safePtr]()
+    {
+        if ( auto* comp = safePtr.getComponent() )
+        {
+            auto enabled = comp->analyzerEnabledButton.getToggleState();
+            comp->responseCurveComponent.toggleAnalysisEnablement(enabled);
+        }
+    };
+    
     setSize (800, 600);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
 {
+    peakOneBypassButton.setLookAndFeel(nullptr);
+    peakTwoBypassButton.setLookAndFeel(nullptr);
+    peakThreeBypassButton.setLookAndFeel(nullptr);
+    lowCutBypassButton.setLookAndFeel(nullptr);
+    highCutBypassButton.setLookAndFeel(nullptr);
+    
+    analyzerEnabledButton.setLookAndFeel(nullptr);
+    
 }
 
 //==============================================================================
@@ -611,29 +783,49 @@ void SimpleEQAudioProcessorEditor::resized()
     // subcomponents in your editor..
     
     auto bounds = getLocalBounds();
+    
+    auto analyzerEnabledArea = bounds.removeFromTop(30);
+    analyzerEnabledArea.setWidth(110);
+    analyzerEnabledArea.setX(20);
+    analyzerEnabledArea.removeFromTop(5);
+    
+    analyzerEnabledButton.setBounds(analyzerEnabledArea);
+    
+    bounds.removeFromTop(5);
+    
     auto responseArea = bounds.removeFromTop(bounds.getHeight() * 0.4);
     
     responseCurveComponent.setBounds(responseArea);
     
+    bounds.removeFromTop(2);
+    
     auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.125);
     auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.142857);
-
+    
+    lowCutBypassButton.setBounds(lowCutArea.removeFromTop(29));
+    lowCutArea.removeFromTop(2);
     lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.45 ));
     lowCutSlopeSlider.setBounds(lowCutArea);
+    
+    highCutBypassButton.setBounds(highCutArea.removeFromTop(29));
+    highCutArea.removeFromTop(2);
     highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.45 ));
     highCutSlopeSlider.setBounds(highCutArea);
     
     auto peakOneArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
     auto peakTwoArea = bounds.removeFromLeft(bounds.getWidth() * 0.5);
 
+    peakOneBypassButton.setBounds(peakOneArea.removeFromTop(33));
     peakOneFreqSlider.setBounds(peakOneArea.removeFromTop(peakOneArea.getHeight() * 0.6 ));
     peakOneGainSlider.setBounds(peakOneArea.removeFromLeft(peakOneArea.getWidth() * 0.5 ));
     peakOneQualitySlider.setBounds(peakOneArea);
 
+    peakTwoBypassButton.setBounds(peakTwoArea.removeFromTop(33));
     peakTwoFreqSlider.setBounds(peakTwoArea.removeFromTop(peakTwoArea.getHeight() * 0.6 ));
     peakTwoGainSlider.setBounds(peakTwoArea.removeFromLeft(peakTwoArea.getWidth() * 0.5 ));
     peakTwoQualitySlider.setBounds(peakTwoArea);
     
+    peakThreeBypassButton.setBounds(bounds.removeFromTop(33));
     peakThreeFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.6 ));
     peakThreeGainSlider.setBounds(bounds.removeFromLeft(bounds.getWidth() * 0.5 ));
     peakThreeQualitySlider.setBounds(bounds);
@@ -656,6 +848,13 @@ std::vector<juce::Component*> SimpleEQAudioProcessorEditor::getComps()
         &lowCutFreqSlider,
         &lowCutSlopeSlider,
         &highCutFreqSlider,
-        &highCutSlopeSlider
+        &highCutSlopeSlider,
+        
+        &peakOneBypassButton,
+        &peakTwoBypassButton,
+        &peakThreeBypassButton,
+        &lowCutBypassButton,
+        &highCutBypassButton,
+        &analyzerEnabledButton
     };
 }

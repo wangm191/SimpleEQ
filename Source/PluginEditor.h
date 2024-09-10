@@ -173,6 +173,11 @@ struct LookAndFeel : juce::LookAndFeel_V4
                                    float rotaryStartAngle,
                                    float rotaryEndAngle,
                            juce::Slider&) override;
+    
+    void drawToggleButton (juce::Graphics &g,
+                           juce::ToggleButton & toggleButton,
+                           bool shouldDrawButtonAsHighlighted,
+                           bool shouldDrawButtonAsDown) override;
 };
 
 struct RotarySliderWithLabels : juce::Slider
@@ -248,6 +253,11 @@ juce::Timer
     
     void resized() override;
     
+    void toggleAnalysisEnablement(bool enabled)
+    {
+        shouldShowFFTAnalysis = enabled;
+    }
+    
 private:
     SimpleEQAudioProcessor& audioProcessor;
     juce::Atomic<bool> parametersChanged { false };
@@ -265,9 +275,34 @@ private:
     juce::Rectangle<int> getAnalysisArea();
     
     PathProducer leftPathProducer, rightPathProducer;
+    
+    //Flag for AnalysisEnablment check;
+    bool shouldShowFFTAnalysis = true;
 };
 
 //==============================================================================
+struct PowerButton : juce::ToggleButton { };
+struct AnalyzerButton :juce::ToggleButton
+{
+    void resized() override
+    {
+        auto bounds = getLocalBounds();
+        auto insertRec = bounds.reduced(4);
+        
+        randomPath.clear();
+        
+        juce::Random r;
+        
+        randomPath.startNewSubPath(insertRec.getX(), insertRec.getY() + insertRec.getHeight() * r.nextFloat());
+        
+        for ( auto x = insertRec.getX() + 1; x < insertRec.getRight(); x += 2 )
+        {
+            randomPath.lineTo(x, insertRec.getY() + insertRec.getHeight() * r.nextFloat());
+        }
+    }
+    
+    juce::Path randomPath;
+};
 /**
 */
 class SimpleEQAudioProcessorEditor  : public juce::AudioProcessorEditor
@@ -318,7 +353,21 @@ private:
                 highCutFreqSliderAttachment,
                 highCutSlopeSliderAttachment;
     
+    PowerButton peakOneBypassButton, peakTwoBypassButton, peakThreeBypassButton, lowCutBypassButton, highCutBypassButton;
+    
+    AnalyzerButton analyzerEnabledButton;
+    
+    using ButtonAttachment = APVTS::ButtonAttachment;
+    ButtonAttachment peakOneBypassButtonAttachment,
+                     peakTwoBypassButtonAttachment,
+                     peakThreeBypassButtonAttachment,
+                     lowCutBypassButtonAttachment,
+                     highCutBypassButtonAttachment,
+                     analyzerEnabledButtonAttachment;
+    
     std::vector<juce::Component*> getComps();
+    
+    LookAndFeel lnf;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessorEditor)
 };
